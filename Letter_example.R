@@ -13,7 +13,10 @@ Yt <- letter_test[, 1]
 Xt <- as.matrix(letter_test[, -1])
 
 # [ToDo] Make sure to add column for an intercept to X and Xt
-
+one_train<-array(1,dim = dim(X)[1])
+one_test<-array(1,dim = dim(Xt)[1])
+X<-cbind(one_train,X)
+Xt<-cbind(one_test,Xt)
 # Source the LR function
 source("FunctionsLR.R")
 
