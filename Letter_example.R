@@ -31,20 +31,19 @@ plot(out$error_test, type = 'o')
 # Feel free to modify the code above for different lambda/eta/numIter values to see how it affects the convergence as well as train/test errors
 
 #Differenet values of Lambda
-lambda_0.5<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.1, lambda = 0.5, beta_init = NULL)     #Train error:21.60   Test error:26.16
-lambda_1.5<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.1, lambda = 1.5, beta_init = NULL)     #Train eror:21.95    Test eror:26.26
+#lambda_0.5<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.1, lambda = 0.5, beta_init = NULL)     #Train error:21.60   Test error:26.16
+#lambda_1.5<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.1, lambda = 1.5, beta_init = NULL)     #Train eror:21.95    Test eror:26.26
 
 #Different values of eta
-eta_0.05<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.05, lambda = 0.5, beta_init = NULL)      #Train error:23.75   Test error:27.838
-eta_1.5<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 1.5, lambda = 0.5, beta_init = NULL)        #Train error:NA     Test error:NA
+#eta_0.05<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.05, lambda = 0.5, beta_init = NULL)      #Train error:23.75   Test error:27.838
+#eta_1.5<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 1.5, lambda = 0.5, beta_init = NULL)        #Train error:NA     Test error:NA
 
 #Different values of numIter
-numIter_25<-LRMultiClass(X, Y, Xt, Yt, numIter = 25, eta = 0.05, lambda = 0.5, beta_init = NULL)      #Train error:26.35   Test error:29.92
-numIter_100<-LRMultiClass(X, Y, Xt, Yt, numIter = 100, eta = 1.5, lambda = 0.5, beta_init = NULL)     #Train error:NA     Test error:NA
+#numIter_25<-LRMultiClass(X, Y, Xt, Yt, numIter = 25, eta = 0.05, lambda = 0.5, beta_init = NULL)      #Train error:26.35   Test error:29.92
+#numIter_100<-LRMultiClass(X, Y, Xt, Yt, numIter = 100, eta = 1.5, lambda = 0.5, beta_init = NULL)     #Train error:NA     Test error:NA
 
 # [ToDo] Use microbenchmark to time your code with lambda=1 and 50 iterations. To save time, only apply microbenchmark 5 times.
 result<-microbenchmark(out<-LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.1, lambda = 1, beta_init = NULL),times=5)
 print(result)
 # [ToDo] Report the median time of your code from microbenchmark above in the comments below
-#Median time:1.38127(Apple M1 chip)
-# Median time:  (in sec)
+#Median time:1.38127(in sec)(Apple M1 chip)

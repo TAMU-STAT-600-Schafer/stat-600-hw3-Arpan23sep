@@ -62,6 +62,7 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     }
   }
   
+  #Initialsation of train/test/object value arrays
   error_train<-array(0,dim=numIter + 1)
   error_test<-array(0,dim=numIter + 1)
   objective<-array(0,dim=numIter + 1)
@@ -73,35 +74,37 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
   ##########################################################################
+  #Initial beta vector/indicator matrix
   beta_old<-beta_init
   beta_new<-beta_init
   indicator_mat= matrix(0, n, K)
   indicator_mat[cbind(1:n, y + 1)] = 1
-  #indicator_mat<-sapply(0:(K-1),function(j) as.integer(y==j))
+  #indicator_mat<-sapply(0:(K-1),function(j) as.integer(y==j)) is slower than previous simple one
   for(i in 1:numIter){
     # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
-    #P<-exp(X %*% beta_old)
-    #P<-t(apply(P,1,function(row) row / sum(row)))
     P<-soft_max(X,beta_old)  
     I<-diag(p)  
     
     for(j in 1:K){
       P_j<-P[,j]
       w<-P_j*(1-P_j)
-      #beta_new[,j]<-beta_old[,j] - eta * (crossprod(X,(w * X)) +lambda * I) %*% (crossprod(X,(P[,j]-indicator_mat[,j])) + lambda* beta_old[,j]) 
       beta_new[,j]<-beta_old[,j] - eta * (solve(t(X) %*% (w * X) +lambda * I)) %*% (t(X) %*% (P[,j]-indicator_mat[,j]) + lambda* beta_old[,j]) 
+      
+      #These functions are relatively slower
       #w<-P[,j]*(1-P[,j])
       #W<-diag(as.vector(w))
       #beta_new[, j] <- beta_old[, j] - eta * (solve(t(X) %*% sweep(X, 1, w, "*") + lambda * diag(p))) %*% (t(X) %*% (P[, j] - indicator_mat[, j]) + lambda * beta_old[, j])
       #beta_new[,j]<-beta_old[,j] - eta * (solve(t(X) %*% (w * X) +lambda * I)) %*% (t(X) %*% (P[,j]-indicator_mat[,j]) + lambda* beta_old[,j]) 
       #beta_new[, j] <- beta_old[, j] - eta * solve(crossprod(X, w * X) + lambda * I) %*% (crossprod(X, P[, j] - indicator_mat[, j]) + lambda * beta_old[, j])
     }
+    
+    #Calculating errors
     error_train[i+1]<-objective_fun(beta_new,X,y,lambda)$error
     error_test[i+1]<-objective_fun(beta_new,Xt,yt,lambda)$error
     objective[i+1]<-objective_fun(beta_new,X,y,lambda)$objective_value
     
     beta_old<-beta_new
-    if (i %% 10 == 0) print(paste0("Iter=", i))
+    #if (i %% 10 == 0) print(paste0("Iter=", i))
   }
   ## Return output
   ##########################################################################
@@ -113,33 +116,24 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   return(list(beta = beta, error_train = error_train, error_test = error_test, objective =  objective))
 }
 
+#Function to calculate objective value & errors
 objective_fun<-function(beta,X,y,lambda){
   K<-length(unique(y))
   n<-nrow(X)
   epsilon<-1e-15
-  #P<-exp(X %*% beta)
-  #P<-t(apply(P,1,function(row) row / sum(row)))
-  #P<- P / rowSums(P)
   P<-soft_max(X,beta)
-  #indicator_mat<-sapply(0:(K-1),function(j) as.integer(y==j))
-  #indicator_mat<-t(indicator_mat)
-  #print(dim(indicator_mat))
-  #print(dim(P))
   indicator_mat= matrix(0, n, K)
   indicator_mat[cbind(1:n, y + 1)] = 1
   objective1<-sum(indicator_mat * log(P+epsilon)) 
-  #beta_norm<-norm(beta, type = "F")
   objective_value<-(-objective1)+(lambda/2) * (sum(beta^2))
   error<-100 * sum(max.col(P) - y != 1) / length(y)
-  #y_fit<-apply(P,1,FUN= "which.max")-1
-  #error<-100 *(sum(y!=y_fit)/n)
+  #y_fit<-apply(P,1,FUN= "which.max")-1 is slower
   return(list(objective_value=objective_value,error=error))
 }
 
-
+#Soft threesolding function
 soft_max<-function(X,beta){
   z <- X %*% beta
-  #z <- z - apply(z, 1, max)  
   exp_values <- exp(z)
   P <- exp_values / rowSums(exp_values)
   return(P)
