@@ -138,5 +138,3 @@ soft_max<-function(X,beta){
   P <- exp_values / rowSums(exp_values)
   return(P)
 }
-
-

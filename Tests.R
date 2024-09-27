@@ -10,7 +10,7 @@ y <- as.integer(factor(iris$Species)) - 1  # Convert species to numeric 0, 1, 2
 
 # Splitting the data 
 set.seed(12345)
-train_index <- sample(1:nrow(iris), 0.8 * nrow(iris))   # 80% train
+train_index <- sample(1:nrow(iris), 0.8 * nrow(iris))   # 80% train data
 test_index <- setdiff(1:nrow(iris), train_index)        #Remaining are test index
 
 X_train <- X[train_index, ]  # Training data
