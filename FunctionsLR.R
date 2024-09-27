@@ -21,46 +21,43 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   ###################################
   # Check that the first column of X and Xt are 1s, if not - display appropriate message and stop execution.
   if(all(X[, 1] == 1) && all(Xt[, 1] == 1)){
-   }
-  else{
+  } else {
     stop("First column of X and Xt are not ones:Please check!")
   }
   # Check for compatibility of dimensions between X and Y
-  if(dim(X)[1] == length(y)){
-    }
-  else{
+  if(nrow(X) == length(y)){
+  } else {
     stop("Dimension of X and Y are not compatible,PLease check!")
   }
   # Check for compatibility of dimensions between Xt and Yt
-  if(dim(Xt)[1] == length(yt)){
-   }
-  else{
+  if(nrow(Xt) == length(yt)){
+  } else {
     stop("Dimension of Xt and yt are not compatible,PLease check!")
   }
   # Check for compatibility of dimensions between X and Xt
-  if(dim(X)[2] == dim(Xt)[2]){
-   }
-  else{
+  if(ncol(X) == ncol(Xt)){
+  } else {
     stop("Dimension of X and Xt are not compatible,PLease check!")
   }
   # Check eta is positive
   if(eta >0){
-  }else{
+  } else {
     stop("Eta is not positive:Check!")
   }
   # Check lambda is non-negative
   if(lambda >= 0){
-  }else{
-    stop("Lamda is negative:Check!")
+  } else {
+    stop("Lambda is negative:Check!")
   }
   # Check whether beta_init is NULL. If NULL, initialize beta with p x K matrix of zeroes. If not NULL, check for compatibility of dimensions with what has been already supplied.
+  n<-nrow(X)
   p<-ncol(X)
   K<-length(unique(y))
   
   if(is.null(beta_init)){
     beta_init<-matrix(0,nrow = p,ncol = K)
-  }else{
-    if(dim(beta_init)[1]!=p || dim(beta_init)[2]!=K){
+  } else {
+    if(nrow(beta_init)!=p || ncol(beta_init)!=K){
       stop("dimensions of beta_initial are not suitable.Please check!")
     }
   }
@@ -70,23 +67,42 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   objective<-array(0,dim=numIter + 1)
   ## Calculate corresponding pk, objective value f(beta_init), training error and testing error given the starting point beta_init
   ##########################################################################
-  error_train[1]<-objective_fun(beta_init,X,y)$error
-  error_test[1]<-objective_fun(beta_init,Xt,yt)$error
-  objective[1]<-objective_fun(beta_init,X,y)$objective_value
+  error_train[1]<-objective_fun(beta_init,X,y,lambda)$error
+  error_test[1]<-objective_fun(beta_init,Xt,yt,lambda)$error
+  objective[1]<-objective_fun(beta_init,X,y,lambda)$objective_value
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
   ##########################################################################
   beta_old<-beta_init
-  indicator_mat<-sapply(0:(K-1),function(j) as.integer(y==j))
+  beta_new<-beta_init
+  indicator_mat= matrix(0, n, K)
+  indicator_mat[cbind(1:n, y + 1)] = 1
+  #indicator_mat<-sapply(0:(K-1),function(j) as.integer(y==j))
   for(i in 1:numIter){
-  # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
-   beta_new<-beta_old-eta * (solve(t(X) %*% W %*% X +lambda * I)) %*% (t(X) %*% (t(P)-indicator_mat) + lamda* beta_old) 
-   error_train[i+1]<-objective_fun(beta_new,X,y)$error
-   error_test[i+1]<-objective_fun(beta_new,Xt,yt)$error
-   objective[i+1]<-objective_fun(beta_new,X,y)$objective_value
-   
-   beta_old<-beta_new
-   }
+    # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
+    #P<-exp(X %*% beta_old)
+    #P<-t(apply(P,1,function(row) row / sum(row)))
+    P<-soft_max(X,beta_old)  
+    I<-diag(p)  
+    
+    for(j in 1:K){
+      P_j<-P[,j]
+      w<-P_j*(1-P_j)
+      #beta_new[,j]<-beta_old[,j] - eta * (crossprod(X,(w * X)) +lambda * I) %*% (crossprod(X,(P[,j]-indicator_mat[,j])) + lambda* beta_old[,j]) 
+      beta_new[,j]<-beta_old[,j] - eta * (solve(t(X) %*% (w * X) +lambda * I)) %*% (t(X) %*% (P[,j]-indicator_mat[,j]) + lambda* beta_old[,j]) 
+      #w<-P[,j]*(1-P[,j])
+      #W<-diag(as.vector(w))
+      #beta_new[, j] <- beta_old[, j] - eta * (solve(t(X) %*% sweep(X, 1, w, "*") + lambda * diag(p))) %*% (t(X) %*% (P[, j] - indicator_mat[, j]) + lambda * beta_old[, j])
+      #beta_new[,j]<-beta_old[,j] - eta * (solve(t(X) %*% (w * X) +lambda * I)) %*% (t(X) %*% (P[,j]-indicator_mat[,j]) + lambda* beta_old[,j]) 
+      #beta_new[, j] <- beta_old[, j] - eta * solve(crossprod(X, w * X) + lambda * I) %*% (crossprod(X, P[, j] - indicator_mat[, j]) + lambda * beta_old[, j])
+    }
+    error_train[i+1]<-objective_fun(beta_new,X,y,lambda)$error
+    error_test[i+1]<-objective_fun(beta_new,Xt,yt,lambda)$error
+    objective[i+1]<-objective_fun(beta_new,X,y,lambda)$objective_value
+    
+    beta_old<-beta_new
+    if (i %% 10 == 0) print(paste0("Iter=", i))
+  }
   ## Return output
   ##########################################################################
   # beta - p x K matrix of estimated beta values after numIter iterations
@@ -97,23 +113,38 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   return(list(beta = beta, error_train = error_train, error_test = error_test, objective =  objective))
 }
 
-objective_fun<-function(beta,X,y){
-K<-length(unique(y))
-n<-nrow(X)
-P<-matrix(0,nrow=K,ncol=n)
-for(i in 1:K){
-  for(j in 1:n){
-    P[i,j]<-t(X[,i]) %*% beta[,j]
-    P<-apply(P,2,colSums(P),FUN = "/")
-  }
+objective_fun<-function(beta,X,y,lambda){
+  K<-length(unique(y))
+  n<-nrow(X)
+  epsilon<-1e-15
+  #P<-exp(X %*% beta)
+  #P<-t(apply(P,1,function(row) row / sum(row)))
+  #P<- P / rowSums(P)
+  P<-soft_max(X,beta)
+  #indicator_mat<-sapply(0:(K-1),function(j) as.integer(y==j))
+  #indicator_mat<-t(indicator_mat)
+  #print(dim(indicator_mat))
+  #print(dim(P))
+  indicator_mat= matrix(0, n, K)
+  indicator_mat[cbind(1:n, y + 1)] = 1
+  objective1<-sum(indicator_mat * log(P+epsilon)) 
+  #beta_norm<-norm(beta, type = "F")
+  objective_value<-(-objective1)+(lambda/2) * (sum(beta^2))
+  error<-100 * sum(max.col(P) - y != 1) / length(y)
+  #y_fit<-apply(P,1,FUN= "which.max")-1
+  #error<-100 *(sum(y!=y_fit)/n)
+  return(list(objective_value=objective_value,error=error))
 }
-indicator_mat<-sapply(0:(K-1),function(j) as.integer(y==j))
-indicator_mat<-t(indicator_mat)
-objective1<-sum(indicator_mat * log(P)) 
-beta_norm<-norm(beta, type = "F")
-objective_value<-(-objective1)+(lambda/2) * beta_norm
-y_fit<-apply(P,2,FUN= "which.max")-1
-error<-100 *(sum(y!=y_fit)/n)
-return(list(objective_value=objective_value,error=error))
+
+
+soft_max<-function(X,beta){
+  z <- X %*% beta
+  #z <- z - apply(z, 1, max)  
+  exp_values <- exp(z)
+  P <- exp_values / rowSums(exp_values)
+  return(P)
 }
+
+
+
 
