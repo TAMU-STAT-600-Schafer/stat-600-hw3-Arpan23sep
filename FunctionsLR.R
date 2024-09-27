@@ -140,5 +140,3 @@ soft_max<-function(X,beta){
 }
 
 
-
-
